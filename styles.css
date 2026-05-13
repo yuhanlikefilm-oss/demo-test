@@ -1,0 +1,137 @@
+body {
+  margin: 0;
+  background: transparent;
+  overflow: hidden;
+  user-select: none;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+#pet {
+  position: relative;
+  width: 280px;
+  height: 220px;
+  animation: drift 8s ease-in-out infinite;
+}
+
+.husky { position: absolute; bottom: 26px; left: 40px; }
+.shadow {
+  position: absolute;
+  bottom: 18px;
+  left: 70px;
+  width: 130px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.body {
+  width: 130px;
+  height: 80px;
+  background: linear-gradient(135deg, #20232a 45%, #e8edf4 46%);
+  border-radius: 60px;
+  position: absolute;
+  top: 78px;
+  left: 38px;
+}
+
+.head {
+  position: absolute;
+  width: 120px;
+  height: 110px;
+  left: 0;
+  top: 16px;
+  background: #1f2430;
+  border-radius: 50% 50% 46% 46%;
+}
+
+.face {
+  position: absolute;
+  inset: 16px 20px 18px;
+  background: #f4f7fb;
+  border-radius: 46% 46% 50% 50%;
+}
+
+.mask {
+  position: absolute;
+  left: 48px;
+  top: 18px;
+  width: 24px;
+  height: 56px;
+  background: #f4f7fb;
+  border-radius: 16px;
+}
+
+.ear {
+  width: 30px;
+  height: 50px;
+  background: #1a1e27;
+  position: absolute;
+  top: 0;
+  border-radius: 60% 60% 10% 10%;
+}
+.ear.left { left: 16px; transform: rotate(-16deg); }
+.ear.right { left: 76px; transform: rotate(16deg); }
+
+.eye {
+  position: absolute;
+  top: 52px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #94c8ff;
+  box-shadow: inset 0 0 0 4px #2b3544;
+  animation: blink 5s infinite;
+}
+.eye.left { left: 28px; }
+.eye.right { right: 28px; }
+
+.nose {
+  position: absolute;
+  left: 52px;
+  top: 75px;
+  width: 16px;
+  height: 12px;
+  border-radius: 50% 50% 70% 70%;
+  background: #101318;
+}
+
+.mouth {
+  position: absolute;
+  left: 45px;
+  top: 90px;
+  width: 30px;
+  height: 8px;
+  border-bottom: 3px solid #2d3139;
+  border-radius: 0 0 50% 50%;
+}
+
+.tail {
+  position: absolute;
+  left: 152px;
+  top: 74px;
+  width: 44px;
+  height: 14px;
+  background: linear-gradient(90deg, #282e39, #e5ebf3);
+  border-radius: 20px;
+  transform-origin: left center;
+  animation: wag 0.8s ease-in-out infinite;
+}
+
+.bubble {
+  position: absolute;
+  top: 8px;
+  left: 12px;
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: 12px;
+  padding: 8px 10px;
+  font-size: 12px;
+  color: #1e2430;
+  opacity: 0;
+  transition: opacity .2s;
+}
+
+#pet.talking .bubble { opacity: 1; }
+
+@keyframes wag { 0%,100% { transform: rotate(10deg);} 50% { transform: rotate(-10deg);} }
+@keyframes blink { 0%, 46%, 100% { transform: scaleY(1);} 48% { transform: scaleY(0.1);} }
+@keyframes drift { 0%,100% { transform: translateX(0);} 50% { transform: translateX(-16px);} }
