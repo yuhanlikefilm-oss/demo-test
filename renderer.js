@@ -10,6 +10,7 @@ let frameIndex = 0;
 let lastTick = 0;
 let walkDirection = 1;
 let xOffset = 0;
+let debugInfo = null;
 
 function showBubble(text, ms = 2600) {
   bubble.textContent = text;
@@ -39,8 +40,18 @@ async function loadFramesFromUrls(urls) {
   return arr;
 }
 
+function buildDebugText(manifest) {
+  return [
+    `idle:${manifest.idle.length} walk:${manifest.walk.length}`,
+    `sleep:${manifest.sleep.length} eat:${manifest.eat.length} click:${manifest.click.length}`,
+    ...manifest.searchedDirs.slice(0, 4),
+  ];
+}
+
 async function loadAllFrames() {
   const manifest = window.petAssets.discover();
+  debugInfo = buildDebugText(manifest);
+
   loadedFrames.idle = await loadFramesFromUrls(manifest.idle);
   loadedFrames.walk = await loadFramesFromUrls(manifest.walk);
   loadedFrames.sleep = await loadFramesFromUrls(manifest.sleep);
@@ -48,10 +59,10 @@ async function loadAllFrames() {
   loadedFrames.click = await loadFramesFromUrls(manifest.click);
 
   if (!loadedFrames.idle.length) {
-    showBubble('仍未识别到 idle，请确认文件在 asset/assets 且为 png。', 5000);
-    console.warn('searchedDirs', manifest.searchedDirs);
+    showBubble('仍未识别到 idle，请确认文件名前缀是 idle_*.png。', 5000);
+    console.warn('asset discovery manifest:', manifest);
   } else {
-    showBubble(`加载成功：idle ${loadedFrames.idle.length}帧 / walk ${loadedFrames.walk.length}帧`);
+    showBubble(`加载成功：idle ${loadedFrames.idle.length}帧`);
   }
 }
 
@@ -70,13 +81,19 @@ function setState(next, durationMs) {
 
 function drawPlaceholder() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = 'rgba(255,255,255,0.9)';
-  ctx.fillRect(10, 40, 220, 110);
+  ctx.fillStyle = 'rgba(255,255,255,0.92)';
+  ctx.fillRect(8, 28, 224, 130);
   ctx.fillStyle = '#222';
-  ctx.font = '12px sans-serif';
-  ctx.fillText('未识别到素材（请重启应用后再试）', 20, 80);
-  ctx.fillText('支持目录: asset/, assets/,', 20, 102);
-  ctx.fillText('asset/husky/, assets/husky/', 20, 124);
+  ctx.font = '11px sans-serif';
+  ctx.fillText('未识别到可用帧。命名示例: idle_01.png', 14, 48);
+  if (debugInfo) {
+    let y = 66;
+    for (const line of debugInfo) {
+      const txt = line.length > 34 ? `${line.slice(0, 34)}...` : line;
+      ctx.fillText(txt, 14, y);
+      y += 16;
+    }
+  }
 }
 
 function moveWhileWalking() {

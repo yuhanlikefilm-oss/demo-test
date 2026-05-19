@@ -5,38 +5,63 @@ const { pathToFileURL } = require('url');
 
 const CANDIDATE_DIRS = ['asset/husky', 'assets/husky', 'asset', 'assets'];
 
-function buildCandidates(prefix) {
-  const out = [];
-  for (const dir of CANDIDATE_DIRS) {
-    for (let i = 1; i <= 12; i += 1) {
-      const p2 = String(i).padStart(2, '0');
-      out.push(path.join(__dirname, dir, `${prefix}_${p2}.png`));
-      out.push(path.join(__dirname, dir, `${prefix}_${i}.png`));
-    }
-    out.push(path.join(__dirname, dir, `${prefix}.png`));
+function safeReadDir(absDir) {
+  try {
+    return fs.readdirSync(absDir, { withFileTypes: true });
+  } catch {
+    return [];
   }
-  return out;
 }
 
-function findFrames(prefix) {
+function discoverDir(absDir) {
   const files = [];
-  const seen = new Set();
-  for (const absPath of buildCandidates(prefix)) {
-    if (!seen.has(absPath) && fs.existsSync(absPath)) {
-      seen.add(absPath);
-      files.push(pathToFileURL(absPath).href);
-    }
+  const entries = safeReadDir(absDir);
+  for (const entry of entries) {
+    if (!entry.isFile()) continue;
+    if (!entry.name.toLowerCase().endsWith('.png')) continue;
+    files.push(path.join(absDir, entry.name));
   }
   return files;
 }
 
+function stateFromName(name) {
+  const lower = name.toLowerCase();
+  if (/^idle(?:_|\.)/.test(lower)) return 'idle';
+  if (/^walk(?:_|\.)/.test(lower)) return 'walk';
+  if (/^sleep(?:_|\.)/.test(lower)) return 'sleep';
+  if (/^eat(?:_|\.)/.test(lower)) return 'eat';
+  if (/^click-reaction(?:_|\.)/.test(lower)) return 'click';
+  return null;
+}
+
+function frameOrderFromName(name) {
+  const m = name.match(/_(\d+)\.png$/i);
+  return m ? Number(m[1]) : 0;
+}
+
+function discoverFrames() {
+  const states = { idle: [], walk: [], sleep: [], eat: [], click: [] };
+  const searchedDirs = [];
+
+  for (const relDir of CANDIDATE_DIRS) {
+    const absDir = path.join(__dirname, relDir);
+    searchedDirs.push(absDir);
+    const files = discoverDir(absDir);
+    for (const absFile of files) {
+      const state = stateFromName(path.basename(absFile));
+      if (!state) continue;
+      states[state].push(absFile);
+    }
+  }
+
+  for (const key of Object.keys(states)) {
+    states[key].sort((a, b) => frameOrderFromName(path.basename(a)) - frameOrderFromName(path.basename(b)));
+    states[key] = states[key].map((p) => pathToFileURL(p).href);
+  }
+
+  return { ...states, searchedDirs };
+}
+
 contextBridge.exposeInMainWorld('petAssets', {
-  discover: () => ({
-    idle: findFrames('idle'),
-    walk: findFrames('walk'),
-    sleep: findFrames('sleep'),
-    eat: findFrames('eat'),
-    click: findFrames('click-reaction'),
-    searchedDirs: CANDIDATE_DIRS.map((d) => path.join(__dirname, d)),
-  }),
+  discover: () => discoverFrames(),
 });
