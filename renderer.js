@@ -11,7 +11,12 @@ let lastTick = 0;
 let walkDirection = 1;
 let xOffset = 0;
 
-const CANDIDATE_FOLDERS = ['asset/husky', 'assets/husky'];
+const CANDIDATE_FOLDERS = [
+  'asset/husky',
+  'assets/husky',
+  'asset',
+  'assets',
+];
 
 function showBubble(text, ms = 2400) {
   bubble.textContent = text;
@@ -67,8 +72,6 @@ async function loadStateFrames(prefix, rangeStart, rangeEnd) {
       // continue
     }
   }
-
-  // de-duplicate by dimensions+src suffix inferred by order (best-effort)
   return frames;
 }
 
@@ -80,9 +83,9 @@ async function loadAllFrames() {
   loadedFrames.click = await loadStateFrames('click-reaction', 1, 8);
 
   if (!loadedFrames.idle.length) {
-    showBubble('未找到 idle 序列，请检查 asset/husky 文件名。', 4500);
+    showBubble('未找到 idle 序列，请检查 asset 或 asset/husky 文件名。', 4800);
   } else {
-    showBubble(`素材加载成功：idle ${loadedFrames.idle.length}帧`);
+    showBubble(`素材加载成功：idle ${loadedFrames.idle.length} 帧`);
   }
 }
 
@@ -109,11 +112,12 @@ function moveWhileWalking() {
 function drawPlaceholder() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = 'rgba(255,255,255,0.9)';
-  ctx.fillRect(10, 45, 220, 92);
+  ctx.fillRect(10, 45, 220, 100);
   ctx.fillStyle = '#222';
   ctx.font = '12px sans-serif';
-  ctx.fillText('未加载到素材，请检查：', 20, 82);
-  ctx.fillText('asset/husky/idle_01.png', 20, 102);
+  ctx.fillText('未加载到素材，请检查以下任一目录：', 20, 78);
+  ctx.fillText('asset/ 或 asset/husky/', 20, 100);
+  ctx.fillText('文件如: idle_01.png', 20, 122);
 }
 
 function draw(now) {
