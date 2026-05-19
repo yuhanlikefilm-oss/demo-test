@@ -1,16 +1,22 @@
 const { app, BrowserWindow, screen, Tray, Menu, nativeImage } = require('electron');
 const path = require('path');
+const fs = require('fs');
 
 let win;
 let tray;
 
-function createWindow() {
+function getWorkAreaPosition() {
   const { width, height } = screen.getPrimaryDisplay().workAreaSize;
+  return { x: Math.max(0, width - 360), y: Math.max(0, height - 300) };
+}
+
+function createWindow() {
+  const pos = getWorkAreaPosition();
   win = new BrowserWindow({
     width: 320,
     height: 260,
-    x: Math.max(0, width - 360),
-    y: Math.max(0, height - 300),
+    x: pos.x,
+    y: pos.y,
     frame: false,
     transparent: true,
     resizable: false,
@@ -24,29 +30,45 @@ function createWindow() {
   });
 
   win.loadFile('index.html');
-  win.on('closed', () => {
-    win = null;
+
+  win.on('close', (event) => {
+    if (!app.isQuiting) {
+      event.preventDefault();
+      win.hide();
+    }
   });
 }
 
+function ensureWindowVisible() {
+  if (!win || win.isDestroyed()) {
+    createWindow();
+    return;
+  }
+  win.show();
+  win.focus();
+}
+
 function setAlwaysOnTop(enabled) {
-  if (!win) return;
+  if (!win || win.isDestroyed()) return;
   win.setAlwaysOnTop(enabled, 'screen-saver');
 }
 
 function createTray() {
   const iconPath = path.join(__dirname, 'asset', 'husky', 'idle.png');
-  const trayIcon = nativeImage.createFromPath(iconPath).resize({ width: 18, height: 18 });
-  tray = new Tray(trayIcon);
+  const fallback = nativeImage.createFromDataURL('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAQ0lEQVR4nGNgGAXUB8Qw/P//PwMDA8N/RkYGeGJjY2P4z8DAwPBPQ0OD4T8DAwPjPwMDg+E/AwMD4z8DAwMAAJa1C4QY4A6xAAAAAElFTkSuQmCC');
+  const trayImage = fs.existsSync(iconPath)
+    ? nativeImage.createFromPath(iconPath).resize({ width: 18, height: 18 })
+    : fallback;
+
+  tray = new Tray(trayImage);
   tray.setToolTip('Husky Desktop Pet');
 
   const menu = Menu.buildFromTemplate([
+    { label: '显示桌宠', click: () => ensureWindowVisible() },
     {
-      label: '显示/隐藏桌宠',
+      label: '隐藏桌宠',
       click: () => {
-        if (!win) return;
-        if (win.isVisible()) win.hide();
-        else win.show();
+        if (win && !win.isDestroyed()) win.hide();
       },
     },
     {
@@ -58,29 +80,27 @@ function createTray() {
     {
       label: '重置位置到右下角',
       click: () => {
-        if (!win) return;
-        const { width, height } = screen.getPrimaryDisplay().workAreaSize;
-        win.setPosition(Math.max(0, width - 360), Math.max(0, height - 300));
-        win.show();
+        ensureWindowVisible();
+        const pos = getWorkAreaPosition();
+        win.setPosition(pos.x, pos.y);
       },
     },
     { type: 'separator' },
-    { label: '退出', click: () => app.quit() },
+    {
+      label: '退出',
+      click: () => {
+        app.isQuiting = true;
+        app.quit();
+      },
+    },
   ]);
 
   tray.setContextMenu(menu);
-  tray.on('double-click', () => {
-    if (!win) return;
-    win.show();
-    win.focus();
-  });
+  tray.on('click', () => ensureWindowVisible());
+  tray.on('double-click', () => ensureWindowVisible());
 }
 
 app.whenReady().then(() => {
   createWindow();
   createTray();
-});
-
-app.on('window-all-closed', (e) => {
-  e.preventDefault();
 });
