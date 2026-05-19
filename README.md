@@ -1,20 +1,20 @@
 # Husky Desktop Pet (Electron)
 
-已改为“全项目目录扫描 PNG”，避免 asset/assets 路径差异导致的不识别。
+已加入**固定可见调试面板**（窗口底部白框），用于显示扫描结果。
+
+## 你当前路径
+你的本机路径应是：`D:\GitHub\demo-test\asset`
 
 ## 识别规则
-- 从项目根目录开始递归扫描（最多 4 层）
-- 自动识别前缀：`idle` / `walk` / `sleep` / `eat` / `click-reaction` / `click`
-- 自动按数字后缀排序，如 `_01` `_02` ...
+- 从项目根目录递归扫描 PNG（最多 4 层）
+- 前缀识别：`idle` / `walk` / `sleep` / `eat` / `click-reaction` / `click`
 
-## 运行
+## 启动
 ```bash
-npm install
 npm start
 ```
 
 ## 若仍不显示
-- 看画布中的调试信息：
-  - `scanned png`（扫描到的 png 总数）
-  - `idle/walk/sleep/eat/click` 各状态命中帧数
-- 若 `scanned png` 为 0，说明应用启动目录不是当前项目目录。
+直接把调试面板这两行发我：
+- `scanned png: ?`
+- `idle:? walk:? sleep:? eat:? click:?`

@@ -1,6 +1,7 @@
 const canvas = document.getElementById('pet');
 const ctx = canvas.getContext('2d');
 const bubble = document.getElementById('bubble');
+const debugPanel = document.getElementById('debug-panel');
 
 const STATE_FPS = { idle: 3, walk: 6, sleep: 2, eat: 4, click: 8 };
 const loadedFrames = {};
@@ -17,6 +18,10 @@ function showBubble(text, ms = 2600) {
   bubble.classList.add('show');
   clearTimeout(showBubble.timer);
   showBubble.timer = setTimeout(() => bubble.classList.remove('show'), ms);
+}
+
+function setDebugText(lines) {
+  debugPanel.textContent = lines.join('\n');
 }
 
 function loadUrlImage(url) {
@@ -47,7 +52,9 @@ async function loadAllFrames() {
     `scanned png: ${manifest.scannedCount}`,
     `idle:${manifest.idle.length} walk:${manifest.walk.length}`,
     `sleep:${manifest.sleep.length} eat:${manifest.eat.length} click:${manifest.click.length}`,
+    '提示: 你的路径应为 D:\\GitHub\\demo-test\\asset',
   ];
+  setDebugText(debugInfo);
 
   loadedFrames.idle = await loadFramesFromUrls(manifest.idle);
   loadedFrames.walk = await loadFramesFromUrls(manifest.walk);
@@ -56,8 +63,7 @@ async function loadAllFrames() {
   loadedFrames.click = await loadFramesFromUrls(manifest.click);
 
   if (!loadedFrames.idle.length) {
-    showBubble('未识别到 idle。请确认图片在项目目录内且前缀为 idle。', 5500);
-    console.warn('asset discovery manifest:', manifest);
+    showBubble('未识别到 idle，请看下方调试面板。', 5500);
   } else {
     showBubble(`加载成功：idle ${loadedFrames.idle.length} 帧`);
   }
@@ -78,19 +84,8 @@ function setState(next, durationMs) {
 
 function drawPlaceholder() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = 'rgba(255,255,255,0.92)';
-  ctx.fillRect(8, 26, 224, 138);
-  ctx.fillStyle = '#222';
-  ctx.font = '11px sans-serif';
-  ctx.fillText('未识别到可用帧（已启用全项目扫描）', 14, 44);
-  if (debugInfo) {
-    let y = 62;
-    for (const line of debugInfo) {
-      const txt = line.length > 33 ? `${line.slice(0, 33)}...` : line;
-      ctx.fillText(txt, 14, y);
-      y += 16;
-    }
-  }
+  ctx.fillStyle = 'rgba(255,255,255,0.55)';
+  ctx.fillRect(20, 38, 180, 100);
 }
 
 function moveWhileWalking() {

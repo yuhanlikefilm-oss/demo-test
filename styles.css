@@ -1,10 +1,10 @@
 :root { --pet-w: 240px; --pet-h: 180px; }
 body { margin: 0; background: transparent; overflow: hidden; font-family: sans-serif; }
-#pet-wrap { position: relative; width: 300px; height: 220px; margin: 8px; }
+#pet-wrap { position: relative; width: 320px; height: 280px; margin: 8px; }
 #pet {
   position: absolute;
   left: 12px;
-  bottom: 4px;
+  bottom: 88px;
   width: var(--pet-w);
   height: var(--pet-h);
   image-rendering: pixelated;
@@ -14,7 +14,7 @@ body { margin: 0; background: transparent; overflow: hidden; font-family: sans-s
   position: absolute;
   left: 6px;
   top: 6px;
-  max-width: 230px;
+  max-width: 250px;
   font-size: 12px;
   background: rgba(255,255,255,.96);
   border: 1px solid rgba(0,0,0,.12);
@@ -25,3 +25,19 @@ body { margin: 0; background: transparent; overflow: hidden; font-family: sans-s
   transition: .2s;
 }
 #bubble.show { opacity: 1; transform: translateY(0); }
+
+#debug-panel {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  bottom: 6px;
+  min-height: 68px;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(0, 0, 0, 0.14);
+  border-radius: 10px;
+  padding: 8px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: #222;
+  white-space: pre-line;
+}
