@@ -2,15 +2,7 @@ const canvas = document.getElementById('pet');
 const ctx = canvas.getContext('2d');
 const bubble = document.getElementById('bubble');
 
-const FRAME_SETS = {
-  idle: ['asset/husky/idle.png', 'assets/husky/idle.png'],
-  walk: ['asset/husky/walk_01.png', 'asset/husky/walk_02.png', 'assets/husky/walk_01.png', 'assets/husky/walk_02.png'],
-  sleep: ['asset/husky/sleep.png', 'assets/husky/sleep.png'],
-  eat: ['asset/husky/eat.png', 'assets/husky/eat.png'],
-  click: ['asset/husky/click-reaction_01.png', 'assets/husky/click-reaction_01.png'],
-};
-
-const STATE_FPS = { idle: 2, walk: 5, sleep: 1, eat: 3, click: 6 };
+const STATE_FPS = { idle: 3, walk: 6, sleep: 2, eat: 4, click: 8 };
 const loadedFrames = {};
 
 let state = 'idle';
@@ -18,6 +10,8 @@ let frameIndex = 0;
 let lastTick = 0;
 let walkDirection = 1;
 let xOffset = 0;
+
+const CANDIDATE_FOLDERS = ['asset/husky', 'assets/husky'];
 
 function showBubble(text, ms = 2400) {
   bubble.textContent = text;
@@ -49,36 +43,46 @@ function loadImage(relativePath) {
   });
 }
 
-async function loadFirstAvailable(candidates) {
-  for (const candidate of candidates) {
+function buildCandidates(prefix, start, end) {
+  const list = [];
+  for (const folder of CANDIDATE_FOLDERS) {
+    for (let i = start; i <= end; i += 1) {
+      const padded = String(i).padStart(2, '0');
+      list.push(`${folder}/${prefix}_${padded}.png`);
+      list.push(`${folder}/${prefix}_${i}.png`);
+    }
+    list.push(`${folder}/${prefix}.png`);
+  }
+  return list;
+}
+
+async function loadStateFrames(prefix, rangeStart, rangeEnd) {
+  const frames = [];
+  const candidates = buildCandidates(prefix, rangeStart, rangeEnd);
+  for (const src of candidates) {
     try {
-      return await loadImage(candidate);
+      const img = await loadImage(src);
+      frames.push(img);
     } catch {
-      // try next
+      // continue
     }
   }
-  return null;
+
+  // de-duplicate by dimensions+src suffix inferred by order (best-effort)
+  return frames;
 }
 
 async function loadAllFrames() {
-  for (const key of Object.keys(FRAME_SETS)) {
-    loadedFrames[key] = [];
-    if (key === 'walk') {
-      const walk1 = await loadFirstAvailable([FRAME_SETS.walk[0], FRAME_SETS.walk[2]]);
-      const walk2 = await loadFirstAvailable([FRAME_SETS.walk[1], FRAME_SETS.walk[3]]);
-      if (walk1) loadedFrames.walk.push(walk1);
-      if (walk2) loadedFrames.walk.push(walk2);
-      continue;
-    }
-
-    const img = await loadFirstAvailable(FRAME_SETS[key]);
-    if (img) loadedFrames[key].push(img);
-  }
+  loadedFrames.idle = await loadStateFrames('idle', 1, 8);
+  loadedFrames.walk = await loadStateFrames('walk', 1, 8);
+  loadedFrames.sleep = await loadStateFrames('sleep', 1, 8);
+  loadedFrames.eat = await loadStateFrames('eat', 1, 8);
+  loadedFrames.click = await loadStateFrames('click-reaction', 1, 8);
 
   if (!loadedFrames.idle.length) {
-    showBubble('未找到 idle.png，请检查 asset/husky 或 assets/husky。', 4500);
+    showBubble('未找到 idle 序列，请检查 asset/husky 文件名。', 4500);
   } else {
-    showBubble('素材加载成功，哈士奇已上线！');
+    showBubble(`素材加载成功：idle ${loadedFrames.idle.length}帧`);
   }
 }
 
@@ -104,11 +108,12 @@ function moveWhileWalking() {
 
 function drawPlaceholder() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = 'rgba(255,255,255,0.86)';
-  ctx.fillRect(18, 52, 208, 84);
+  ctx.fillStyle = 'rgba(255,255,255,0.9)';
+  ctx.fillRect(10, 45, 220, 92);
   ctx.fillStyle = '#222';
   ctx.font = '12px sans-serif';
-  ctx.fillText('等待素材: asset/husky/idle.png', 28, 92);
+  ctx.fillText('未加载到素材，请检查：', 20, 82);
+  ctx.fillText('asset/husky/idle_01.png', 20, 102);
 }
 
 function draw(now) {
