@@ -1,19 +1,11 @@
 # Husky Desktop Pet (Electron)
 
-这版改成在 preload 里直接读取目录并按文件名前缀分类，不再依赖前端猜测路径。
+已改为“全项目目录扫描 PNG”，避免 asset/assets 路径差异导致的不识别。
 
-## 支持目录
-- `asset/`
-- `assets/`
-- `asset/husky/`
-- `assets/husky/`
-
-## 支持命名前缀
-- `idle_01.png ...` 或 `idle.png`
-- `walk_01.png ...` 或 `walk.png`
-- `sleep_01.png ...` 或 `sleep.png`
-- `eat_01.png ...` 或 `eat.png`
-- `click-reaction_01.png ...` 或 `click-reaction.png`
+## 识别规则
+- 从项目根目录开始递归扫描（最多 4 层）
+- 自动识别前缀：`idle` / `walk` / `sleep` / `eat` / `click-reaction` / `click`
+- 自动按数字后缀排序，如 `_01` `_02` ...
 
 ## 运行
 ```bash
@@ -21,7 +13,8 @@ npm install
 npm start
 ```
 
-如果仍不显示：
-1. 先重启应用。
-2. 看窗口里的调试行（会显示扫描到的帧数量与扫描目录）。
-3. 确保是 `.png` 后缀，且前缀拼写一致（如 `click-reaction`）。
+## 若仍不显示
+- 看画布中的调试信息：
+  - `scanned png`（扫描到的 png 总数）
+  - `idle/walk/sleep/eat/click` 各状态命中帧数
+- 若 `scanned png` 为 0，说明应用启动目录不是当前项目目录。

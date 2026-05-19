@@ -3,55 +3,59 @@ const path = require('path');
 const fs = require('fs');
 const { pathToFileURL } = require('url');
 
-const CANDIDATE_DIRS = ['asset/husky', 'assets/husky', 'asset', 'assets'];
+const ROOT_DIR = __dirname;
+const MAX_DEPTH = 4;
+const IMAGE_EXT = /\.png$/i;
 
-function safeReadDir(absDir) {
+function walkDirs(dir, depth = 0, out = []) {
+  if (depth > MAX_DEPTH) return out;
+  let entries = [];
   try {
-    return fs.readdirSync(absDir, { withFileTypes: true });
+    entries = fs.readdirSync(dir, { withFileTypes: true });
   } catch {
-    return [];
+    return out;
   }
-}
 
-function discoverDir(absDir) {
-  const files = [];
-  const entries = safeReadDir(absDir);
   for (const entry of entries) {
-    if (!entry.isFile()) continue;
-    if (!entry.name.toLowerCase().endsWith('.png')) continue;
-    files.push(path.join(absDir, entry.name));
+    const abs = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      if (entry.name === 'node_modules' || entry.name.startsWith('.git')) continue;
+      walkDirs(abs, depth + 1, out);
+      continue;
+    }
+    if (entry.isFile() && IMAGE_EXT.test(entry.name)) {
+      out.push(abs);
+    }
   }
-  return files;
+  return out;
 }
 
 function stateFromName(name) {
   const lower = name.toLowerCase();
-  if (/^idle(?:_|\.)/.test(lower)) return 'idle';
-  if (/^walk(?:_|\.)/.test(lower)) return 'walk';
-  if (/^sleep(?:_|\.)/.test(lower)) return 'sleep';
-  if (/^eat(?:_|\.)/.test(lower)) return 'eat';
-  if (/^click-reaction(?:_|\.)/.test(lower)) return 'click';
+  if (lower.startsWith('idle')) return 'idle';
+  if (lower.startsWith('walk')) return 'walk';
+  if (lower.startsWith('sleep')) return 'sleep';
+  if (lower.startsWith('eat')) return 'eat';
+  if (lower.startsWith('click-reaction') || lower.startsWith('click_reaction') || lower.startsWith('click')) return 'click';
   return null;
 }
 
 function frameOrderFromName(name) {
-  const m = name.match(/_(\d+)\.png$/i);
-  return m ? Number(m[1]) : 0;
+  const m = name.match(/(\d+)/g);
+  if (!m || !m.length) return 0;
+  return Number(m[m.length - 1]);
 }
 
 function discoverFrames() {
   const states = { idle: [], walk: [], sleep: [], eat: [], click: [] };
-  const searchedDirs = [];
+  const searchedRoot = ROOT_DIR;
+  const scannedFiles = walkDirs(ROOT_DIR);
 
-  for (const relDir of CANDIDATE_DIRS) {
-    const absDir = path.join(__dirname, relDir);
-    searchedDirs.push(absDir);
-    const files = discoverDir(absDir);
-    for (const absFile of files) {
-      const state = stateFromName(path.basename(absFile));
-      if (!state) continue;
-      states[state].push(absFile);
-    }
+  for (const absFile of scannedFiles) {
+    const base = path.basename(absFile);
+    const state = stateFromName(base);
+    if (!state) continue;
+    states[state].push(absFile);
   }
 
   for (const key of Object.keys(states)) {
@@ -59,7 +63,11 @@ function discoverFrames() {
     states[key] = states[key].map((p) => pathToFileURL(p).href);
   }
 
-  return { ...states, searchedDirs };
+  return {
+    ...states,
+    searchedRoot,
+    scannedCount: scannedFiles.length,
+  };
 }
 
 contextBridge.exposeInMainWorld('petAssets', {

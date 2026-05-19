@@ -40,17 +40,14 @@ async function loadFramesFromUrls(urls) {
   return arr;
 }
 
-function buildDebugText(manifest) {
-  return [
-    `idle:${manifest.idle.length} walk:${manifest.walk.length}`,
-    `sleep:${manifest.sleep.length} eat:${manifest.eat.length} click:${manifest.click.length}`,
-    ...manifest.searchedDirs.slice(0, 4),
-  ];
-}
-
 async function loadAllFrames() {
   const manifest = window.petAssets.discover();
-  debugInfo = buildDebugText(manifest);
+  debugInfo = [
+    `root: ${manifest.searchedRoot}`,
+    `scanned png: ${manifest.scannedCount}`,
+    `idle:${manifest.idle.length} walk:${manifest.walk.length}`,
+    `sleep:${manifest.sleep.length} eat:${manifest.eat.length} click:${manifest.click.length}`,
+  ];
 
   loadedFrames.idle = await loadFramesFromUrls(manifest.idle);
   loadedFrames.walk = await loadFramesFromUrls(manifest.walk);
@@ -59,10 +56,10 @@ async function loadAllFrames() {
   loadedFrames.click = await loadFramesFromUrls(manifest.click);
 
   if (!loadedFrames.idle.length) {
-    showBubble('仍未识别到 idle，请确认文件名前缀是 idle_*.png。', 5000);
+    showBubble('未识别到 idle。请确认图片在项目目录内且前缀为 idle。', 5500);
     console.warn('asset discovery manifest:', manifest);
   } else {
-    showBubble(`加载成功：idle ${loadedFrames.idle.length}帧`);
+    showBubble(`加载成功：idle ${loadedFrames.idle.length} 帧`);
   }
 }
 
@@ -82,14 +79,14 @@ function setState(next, durationMs) {
 function drawPlaceholder() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = 'rgba(255,255,255,0.92)';
-  ctx.fillRect(8, 28, 224, 130);
+  ctx.fillRect(8, 26, 224, 138);
   ctx.fillStyle = '#222';
   ctx.font = '11px sans-serif';
-  ctx.fillText('未识别到可用帧。命名示例: idle_01.png', 14, 48);
+  ctx.fillText('未识别到可用帧（已启用全项目扫描）', 14, 44);
   if (debugInfo) {
-    let y = 66;
+    let y = 62;
     for (const line of debugInfo) {
-      const txt = line.length > 34 ? `${line.slice(0, 34)}...` : line;
+      const txt = line.length > 33 ? `${line.slice(0, 33)}...` : line;
       ctx.fillText(txt, 14, y);
       y += 16;
     }
