@@ -1,31 +1,15 @@
-const { app, BrowserWindow, screen, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, screen, Tray, Menu, nativeImage } = require('electron');
 const path = require('path');
-const fs = require('fs');
-const { pathToFileURL } = require('url');
 
-const ASSET_DIRS = [path.join(__dirname, 'asset'), path.join(__dirname, 'assets')];
-const FILE_NAME = 'husky-sheet.png';
-
-function ensureAssetDirs() {
-  for (const dir of ASSET_DIRS) {
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  }
-}
-
-function findSpritePath() {
-  for (const dir of ASSET_DIRS) {
-    const p = path.join(dir, FILE_NAME);
-    if (fs.existsSync(p)) return p;
-  }
-  return null;
-}
+let win;
+let tray;
 
 function createWindow() {
   const { width, height } = screen.getPrimaryDisplay().workAreaSize;
-  const win = new BrowserWindow({
-    width: 300,
+  win = new BrowserWindow({
+    width: 320,
     height: 260,
-    x: Math.max(0, width - 340),
+    x: Math.max(0, width - 360),
     y: Math.max(0, height - 300),
     frame: false,
     transparent: true,
@@ -38,34 +22,65 @@ function createWindow() {
       nodeIntegration: false,
     },
   });
+
   win.loadFile('index.html');
+  win.on('closed', () => {
+    win = null;
+  });
 }
 
-ipcMain.handle('resolve-husky-sheet', async () => {
-  const found = findSpritePath();
-  return {
-    ok: Boolean(found),
-    fileUrl: found ? pathToFileURL(found).href : null,
-    searched: ASSET_DIRS.map((d) => path.join(d, FILE_NAME)),
-  };
-});
+function setAlwaysOnTop(enabled) {
+  if (!win) return;
+  win.setAlwaysOnTop(enabled, 'screen-saver');
+}
 
-ipcMain.handle('pick-husky-sheet', async () => {
-  ensureAssetDirs();
-  const { canceled, filePaths } = await dialog.showOpenDialog({
-    title: '选择哈士奇精灵图',
-    properties: ['openFile'],
-    filters: [{ name: 'Image', extensions: ['png', 'webp'] }],
+function createTray() {
+  const iconPath = path.join(__dirname, 'asset', 'husky', 'idle.png');
+  const trayIcon = nativeImage.createFromPath(iconPath).resize({ width: 18, height: 18 });
+  tray = new Tray(trayIcon);
+  tray.setToolTip('Husky Desktop Pet');
+
+  const menu = Menu.buildFromTemplate([
+    {
+      label: '显示/隐藏桌宠',
+      click: () => {
+        if (!win) return;
+        if (win.isVisible()) win.hide();
+        else win.show();
+      },
+    },
+    {
+      label: '始终置顶',
+      type: 'checkbox',
+      checked: false,
+      click: (item) => setAlwaysOnTop(item.checked),
+    },
+    {
+      label: '重置位置到右下角',
+      click: () => {
+        if (!win) return;
+        const { width, height } = screen.getPrimaryDisplay().workAreaSize;
+        win.setPosition(Math.max(0, width - 360), Math.max(0, height - 300));
+        win.show();
+      },
+    },
+    { type: 'separator' },
+    { label: '退出', click: () => app.quit() },
+  ]);
+
+  tray.setContextMenu(menu);
+  tray.on('double-click', () => {
+    if (!win) return;
+    win.show();
+    win.focus();
   });
-  if (canceled || !filePaths[0]) return { ok: false, reason: 'canceled' };
-
-  const target = path.join(ASSET_DIRS[0], FILE_NAME);
-  fs.copyFileSync(filePaths[0], target);
-  return { ok: true, fileUrl: pathToFileURL(target).href, target };
-});
+}
 
 app.whenReady().then(() => {
-  ensureAssetDirs();
   createWindow();
+  createTray();
 });
-app.on('window-all-closed', () => app.quit());
+
+app.on('window-all-closed', (e) => {
+  e.preventDefault();
+});

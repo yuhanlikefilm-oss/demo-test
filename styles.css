@@ -1,15 +1,27 @@
-:root { --pet-w: 220px; --pet-h: 180px; }
+:root { --pet-w: 240px; --pet-h: 180px; }
 body { margin: 0; background: transparent; overflow: hidden; font-family: sans-serif; }
-#pet-wrap { position: relative; width: 280px; height: 240px; margin: 8px; }
-#pick-sheet {
-  position: absolute; right: 4px; top: 0; z-index: 2;
-  font-size: 11px; border: 0; border-radius: 8px; padding: 5px 8px;
-  background: rgba(28, 32, 43, 0.85); color: #fff; cursor: pointer;
+#pet-wrap { position: relative; width: 300px; height: 220px; margin: 8px; }
+#pet {
+  position: absolute;
+  left: 12px;
+  bottom: 4px;
+  width: var(--pet-w);
+  height: var(--pet-h);
+  image-rendering: pixelated;
+  cursor: pointer;
 }
-#pet { position: absolute; left: 0; bottom: 0; width: var(--pet-w); height: var(--pet-h); image-rendering: pixelated; cursor: pointer; }
 #bubble {
-  position: absolute; left: 6px; top: 28px; max-width: 210px; font-size: 12px;
-  background: rgba(255,255,255,.96); border: 1px solid rgba(0,0,0,.12); border-radius: 10px;
-  padding: 6px 9px; opacity: 0; transform: translateY(6px); transition: .2s;
+  position: absolute;
+  left: 6px;
+  top: 6px;
+  max-width: 230px;
+  font-size: 12px;
+  background: rgba(255,255,255,.96);
+  border: 1px solid rgba(0,0,0,.12);
+  border-radius: 10px;
+  padding: 6px 9px;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: .2s;
 }
 #bubble.show { opacity: 1; transform: translateY(0); }

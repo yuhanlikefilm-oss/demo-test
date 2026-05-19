@@ -1,87 +1,117 @@
 const canvas = document.getElementById('pet');
 const ctx = canvas.getContext('2d');
 const bubble = document.getElementById('bubble');
-const pickButton = document.getElementById('pick-sheet');
 
-const FRAME_W = 288;
-const FRAME_H = 220;
-const STATES = {
-  idle: { row: 0, frames: 6, fps: 5 },
-  walk: { row: 1, frames: 4, fps: 7 },
-  sleep: { row: 2, frames: 4, fps: 2 },
-  eat: { row: 3, frames: 4, fps: 4 },
-  click: { row: 4, frames: 5, fps: 8 },
+const FRAME_SETS = {
+  idle: ['asset/husky/idle.png'],
+  walk: ['asset/husky/walk_01.png', 'asset/husky/walk_02.png'],
+  sleep: ['asset/husky/sleep.png'],
+  eat: ['asset/husky/eat.png'],
+  click: ['asset/husky/click-reaction_01.png', 'asset/husky/click-reaction_01.png'],
 };
 
-let sprite = null;
+const STATE_FPS = {
+  idle: 2,
+  walk: 5,
+  sleep: 1,
+  eat: 3,
+  click: 6,
+};
+
+const loadedFrames = {};
 let state = 'idle';
-let frame = 0;
+let frameIndex = 0;
 let lastTick = 0;
 
-const lines = ['汪！我来啦', '现在是散步时间~', '饿了就会去吃饭', '点我会有反应'];
+const lines = ['我在任务栏等你右键~', '要散步啦！', '摸摸我～', '工作辛苦了'];
 
 function speak(text) {
   bubble.textContent = text;
   bubble.classList.add('show');
   clearTimeout(speak.timer);
-  speak.timer = setTimeout(() => bubble.classList.remove('show'), 2600);
+  speak.timer = setTimeout(() => bubble.classList.remove('show'), 2200);
+}
+
+function loadImage(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error(src));
+    img.src = `${src}?t=${Date.now()}`;
+  });
+}
+
+async function loadAllFrames() {
+  const states = Object.keys(FRAME_SETS);
+  for (const s of states) {
+    loadedFrames[s] = [];
+    for (const src of FRAME_SETS[s]) {
+      try {
+        const img = await loadImage(src);
+        loadedFrames[s].push(img);
+      } catch {
+        // skip missing frame
+      }
+    }
+  }
+
+  if (!loadedFrames.idle.length) {
+    speak('未找到 asset/husky/idle.png');
+  } else {
+    speak('素材加载成功，已切换为你的文件命名规则。');
+  }
 }
 
 function setState(next, durationMs) {
+  if (!loadedFrames[next]?.length) return;
   state = next;
-  frame = 0;
-  if (durationMs) setTimeout(() => (state = 'idle'), durationMs);
-}
-
-function loadSpriteFromUrl(fileUrl) {
-  sprite = new Image();
-  sprite.src = `${fileUrl}?t=${Date.now()}`;
-  sprite.onload = () => speak('识别到 husky-sheet.png，形象已更新！');
-  sprite.onerror = () => speak('图片加载失败，请确认文件可读。');
-}
-
-async function tryAutoLoadSprite() {
-  const result = await window.petAPI.resolveHuskySheet();
-  if (!result?.ok) {
-    speak(`未找到素材，请放到 asset/ 或 assets/`);
-    return;
+  frameIndex = 0;
+  if (durationMs) {
+    setTimeout(() => {
+      state = loadedFrames.walk?.length && Math.random() > 0.5 ? 'walk' : 'idle';
+      frameIndex = 0;
+    }, durationMs);
   }
-  loadSpriteFromUrl(result.fileUrl);
 }
 
 function draw(now) {
   requestAnimationFrame(draw);
-  if (!sprite || !sprite.complete || !sprite.naturalWidth) return;
-  const cfg = STATES[state];
-  const interval = 1000 / cfg.fps;
+  const frames = loadedFrames[state];
+  if (!frames || !frames.length) return;
+
+  const interval = 1000 / STATE_FPS[state];
   if (now - lastTick > interval) {
-    frame = (frame + 1) % cfg.frames;
+    frameIndex = (frameIndex + 1) % frames.length;
     lastTick = now;
   }
+
+  const img = frames[frameIndex];
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.drawImage(sprite, frame * FRAME_W, cfg.row * FRAME_H, FRAME_W, FRAME_H, 0, 0, canvas.width, canvas.height);
+
+  const scale = Math.min(canvas.width / img.width, canvas.height / img.height);
+  const dw = img.width * scale;
+  const dh = img.height * scale;
+  const dx = (canvas.width - dw) / 2;
+  const dy = canvas.height - dh;
+
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(img, dx, dy, dw, dh);
 }
 
-setInterval(() => {
-  const roll = Math.random();
-  if (roll < 0.2) setState('sleep', 5000);
-  else if (roll < 0.55) setState('walk', 3200);
-  else if (roll < 0.75) setState('eat', 2600);
-  else setState('idle');
-}, 7000);
-
-setInterval(() => speak(lines[Math.floor(Math.random() * lines.length)]), 23000);
 canvas.addEventListener('click', () => {
-  setState('click', 1100);
+  setState('click', 1200);
   speak(lines[Math.floor(Math.random() * lines.length)]);
 });
 
-pickButton.addEventListener('click', async () => {
-  const result = await window.petAPI.pickHuskySheet();
-  if (result?.ok && result?.fileUrl) {
-    loadSpriteFromUrl(result.fileUrl);
-  }
-});
+setInterval(() => {
+  const roll = Math.random();
+  if (roll < 0.2) setState('sleep', 4500);
+  else if (roll < 0.55) setState('walk', 2600);
+  else if (roll < 0.75) setState('eat', 2400);
+  else setState('idle');
+}, 6000);
+
+setInterval(() => speak(lines[Math.floor(Math.random() * lines.length)]), 25000);
 
 requestAnimationFrame(draw);
-tryAutoLoadSprite();
+loadAllFrames();
